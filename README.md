@@ -1,116 +1,71 @@
-# ДЗ 3 — AI-сервисы и Apache Spark в Docker
+# ДЗ 3 — AI-сервисы и Apache Spark
 
-**Big Data course, ДЗ 3.**
+**Курс:** Прикладные задачи Big Data, СПбГУ
 
-Состоит из двух частей:
+## Часть 1 — AI-сервисы
 
-1. **AI-сервисы** — установить и попробовать Cursor, Claude Code, VSCode с AI-плагинами и локальную Gemma через Ollama. Сравнить, ходят ли модели в интернет. См. `report/ai_services_report.md`.
-2. **Spark** — поднять Apache Spark в Docker, сгенерировать 50 ГБ датасет, обработать его в двух режимах (`local[*]` и `spark://`), замерить время.
+Установлены и протестированы **4 AI-инструмента**. Каждому задавался один и тот же вопрос про `spark_job.py`.
 
-## Структура
+| Инструмент | Установка | Интернет | Скриншот |
+|---|---|---|---|
+| Cursor | DMG с cursor.com | Постоянно | `docs/screenshots/cursor.png` |
+| Claude Code | `npm install -g @anthropic-ai/claude-code` | Постоянно | `docs/screenshots/claude.png` |
+| VSCode + Continue | расширение + Ollama backend | Только при скачивании модели | `docs/screenshots/vs code (continue).png` |
+| Gemma 2 (Ollama) | `ollama pull gemma2:9b` | Только при скачивании модели | `docs/screenshots/ollama.png` |
 
-```
-hw3/
-├── docker-compose.yml          # Spark Master + Worker + Jupyter
-├── scripts/
-│   └── generate_dataset.py     # генерация 50 ГБ синтетического лога
-├── jobs/
-│   └── spark_job.py            # PySpark агрегация (запускается в обоих режимах)
-├── notebooks/                  # Jupyter notebook со Spark
-├── data/                       # сюда падает датасет (gitignored)
-├── results/                    # результаты в Parquet
-├── report/
-│   ├── ai_services_report.md   # часть 1 — отчёт по AI
-│   └── spark_results.md        # часть 2 — числа замеров
-└── docs/
-    └── screenshots/            # скриншоты для отчётов
-```
+**Вывод:** только Ollama-based решения работают полностью офлайн. Полный отчёт в `report/ai_services_report.md`.
 
-## Требования
+## Часть 2 — Apache Spark
 
-- Docker Desktop с поддержкой Apple Silicon
-- 80+ ГБ свободного диска
-- Python 3.10+ (для генерации датасета на хосте, опционально)
+**Окружение:** MacBook Air M1, 8 GB RAM, Docker Desktop, Apache Spark 3.5.3 (Master + Worker = эмуляция кластера).
 
-## Быстрый старт
+**Датасет:** синтетический e-commerce CSV, **50.06 GiB, 789 млн строк** (генерация — `scripts/generate_dataset.py`).
 
-### 1. Поднять стек
+**Job:** `jobs/spark_job.py` делает два groupBy по всему датасету:
+1. По стране — count, distinct users, sum revenue, avg price
+2. По категории — count, distinct users, sum revenue
+
+### Результаты замеров
+
+| Режим | Wall-clock |
+|---|---|
+| `--master local[*]` | **~14 340 сек (≈4 часа)** |
+| `--master spark://spark-master:7077` | **~12 600 сек (≈3.5 часа)** |
+
+### Пример вывода (groupBy по категории)
+Все 10 категорий обработаны, ~78.9M событий и 1M уникальных пользователей в каждой.
+
+**Анализ:** на эмуляции кластера на одной машине разница local vs cluster ~10% — Master и Worker делят те же ресурсы. Полный отчёт в `report/spark_results.md`.
+
+**Conda-pack:** скрипт `scripts/build_conda_env.sh` для упаковки Python окружения.
+
+## Ограничение
+
+Полный стек HDFS+YARN+Hive+Zeppelin требует ~12 GB RAM. На 8 GB Mac не помещается. Использован минимально достаточный Spark standalone (Master+Worker) — двух режимов запуска `local[*]` и `spark://` достаточно для выполнения задания.
+
+## Запуск
 
 ```bash
 docker compose up -d
-docker compose ps        # все 3 контейнера должны быть Up
-```
 
-UI:
-- Spark Master: http://localhost:8080
-- Jupyter: http://localhost:8888 (token: `spark`)
+# UI: Spark Master http://localhost:8080, Jupyter http://localhost:8888 (token: spark)
 
-### 2. Сгенерировать датасет 50 ГБ
+docker compose exec spark-master python3 /workspace/scripts/generate_dataset.py \
+  --output /workspace/data/big_dataset.csv --target-gb 50
 
-```bash
-docker compose exec spark-master \
-  python /workspace/scripts/generate_dataset.py \
-  --output /workspace/data/big_dataset.csv \
-  --target-gb 50
-```
-
-Занимает ~30 минут. Файл появляется в `./data/big_dataset.csv` на хосте.
-
-Проверь размер:
-
-```bash
-ls -lh data/big_dataset.csv
-# должно быть ~50G
-```
-
-### 3. Запуск в режиме `local[*]`
-
-```bash
-docker compose exec spark-master \
-  /opt/bitnami/spark/bin/spark-submit \
-  --master local[*] \
+docker compose exec spark-master /opt/spark/bin/spark-submit \
+  --master "local[*]" --driver-memory 4g \
   /workspace/jobs/spark_job.py \
-  --input  /workspace/data/big_dataset.csv \
-  --output /workspace/results/local \
-  --master "local[*]"
-```
+  --input /workspace/data/big_dataset.csv \
+  --output /workspace/results/local --master "local[*]"
 
-В выводе будет `Wall-clock: XX.XX seconds` — это локальное время.
-
-### 4. Запуск в режиме `spark://spark-master:7077` (кластер)
-
-```bash
-docker compose exec spark-master \
-  /opt/bitnami/spark/bin/spark-submit \
-  --master spark://spark-master:7077 \
+docker compose exec spark-master /opt/spark/bin/spark-submit \
+  --master spark://spark-master:7077 --executor-memory 3g \
   /workspace/jobs/spark_job.py \
-  --input  /workspace/data/big_dataset.csv \
-  --output /workspace/results/cluster \
-  --master "spark://spark-master:7077"
-```
+  --input /workspace/data/big_dataset.csv \
+  --output /workspace/results/cluster --master "spark://spark-master:7077"
 
-В выводе будет `Wall-clock: YY.YY seconds` — это кластерное время.
-
-### 5. Conda-pack для распространения окружения (опционально)
-
-В Apache Spark на YARN обычно используется `conda-pack` чтобы упаковать Python-окружение и отправить вместе с job. На упрощённом standalone-кластере это не обязательно (Worker уже содержит pyspark), но команда есть в `scripts/build_conda_env.sh`.
-
-## Записать результаты
-
-В `report/spark_results.md` подставь свои числа из двух запусков и сделай скриншот вывода `spark-submit` в `docs/screenshots/spark_console.png`.
-
-## Что НЕ включено и почему
-
-Полный стек **HDFS + YARN + Hive + Zeppelin** требует около 12 ГБ оперативной памяти у Docker Desktop. На MacBook с 8 ГБ это физически не помещается — контейнеры начинают падать по OOM. Поэтому стек упрощён до Spark Master + Worker + Jupyter, что достаточно для демонстрации двух режимов выполнения (`local[*]` и распределённый через `spark://`). Условие «обработка в двух режимах с замером времени» выполнено.
-
-## Остановить
-
-```bash
 docker compose down
 ```
 
-## Полная очистка
-
-```bash
-docker compose down -v
-```
+## Структура
