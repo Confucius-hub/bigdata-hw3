@@ -1,0 +1,9 @@
+.DS_Store
+data/*
+!data/.gitkeep
+results/*
+!results/.gitkeep
+*.tar.gz
+*.log
+.ipynb_checkpoints/
+__pycache__/
