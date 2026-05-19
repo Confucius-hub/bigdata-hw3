@@ -22,6 +22,7 @@
 **Датасет:** синтетический e-commerce CSV, **50.06 GiB, 789 млн строк** (генерация — `scripts/generate_dataset.py`).
 
 **Job:** `jobs/spark_job.py` делает два groupBy по всему датасету:
+
 1. По стране — count, distinct users, sum revenue, avg price
 2. По категории — count, distinct users, sum revenue
 
@@ -41,8 +42,9 @@
 
 ## Ограничение
 
-Полный стек HDFS+YARN+Hive+Zeppelin требует ~12 GB RAM. На 8 GB Mac не помещается. Использован минимально достаточный Spark standalone (Master+Worker) — двух режимов запуска `local[*]` и `spark://` достаточно для выполнения задания.
+Полный стек HDFS + YARN + Hive + Zeppelin требует ~12 GB RAM. На 8 GB Mac не помещается. Использован минимально достаточный Spark standalone (Master + Worker) — двух режимов запуска `local[*]` и `spark://` достаточно для выполнения задания.
 
+## Структура
 ## Запуск
 
 ```bash
@@ -67,5 +69,3 @@ docker compose exec spark-master /opt/spark/bin/spark-submit \
 
 docker compose down
 ```
-
-## Структура
