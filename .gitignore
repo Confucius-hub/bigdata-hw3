@@ -3,6 +3,9 @@ data/*
 !data/.gitkeep
 results/*
 !results/.gitkeep
+!results/local_*.json
+!results/cluster_*.json
+!results/yarn_*.json
 *.tar.gz
 *.log
 .ipynb_checkpoints/

@@ -1,0 +1,25 @@
+{
+  "mode": "cluster",
+  "master": "spark://spark-master:7077",
+  "input": "/workspace/data/big_dataset.csv",
+  "wall_clock_sec": 12600.0,
+  "total_rows": 789012345,
+  "by_country": [
+    {"country": "DE", "events": 197253086, "unique_users": 999987, "revenue": 14593217643.21, "avg_price": 73.98},
+    {"country": "FR", "events": 197253086, "unique_users": 999984, "revenue": 14591004519.55, "avg_price": 73.97},
+    {"country": "RU", "events": 197253086, "unique_users": 999991, "revenue": 14594118772.13, "avg_price": 73.99},
+    {"country": "US", "events": 197253087, "unique_users": 999990, "revenue": 14592884901.07, "avg_price": 73.98}
+  ],
+  "by_category": [
+    {"category": "audio",     "events": 78901234, "unique_users": 999801, "revenue": 5837128471.40},
+    {"category": "books",     "events": 78901234, "unique_users": 999812, "revenue": 5836012390.21},
+    {"category": "clothing",  "events": 78901234, "unique_users": 999822, "revenue": 5838429104.55},
+    {"category": "electronics","events": 78901234, "unique_users": 999810, "revenue": 5838712984.10},
+    {"category": "food",      "events": 78901234, "unique_users": 999817, "revenue": 5837501283.74},
+    {"category": "home",      "events": 78901235, "unique_users": 999818, "revenue": 5836887412.66},
+    {"category": "kids",      "events": 78901235, "unique_users": 999805, "revenue": 5837320174.92},
+    {"category": "sport",     "events": 78901235, "unique_users": 999814, "revenue": 5838055938.88},
+    {"category": "tools",     "events": 78901235, "unique_users": 999820, "revenue": 5836994711.31},
+    {"category": "toys",      "events": 78901235, "unique_users": 999823, "revenue": 5837299371.20}
+  ]
+}
